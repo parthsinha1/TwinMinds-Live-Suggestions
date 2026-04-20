@@ -1,7 +1,7 @@
 import httpx
 from fastapi import HTTPException
 
-base_url="https://api.groq.com/openai/v1",
+base_url="https://api.groq.com/openai/v1"
 
 
 async def groq_test_key(api_key:str) -> None:
@@ -14,7 +14,7 @@ async def groq_test_key(api_key:str) -> None:
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": "Reply with exactly: OK"},
         ],
-        "temparature":0,
+        "temperature":0,
         "max_tokens":5,
     }
 
