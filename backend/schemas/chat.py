@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Literal, Optional
 import uuid
 from datetime import datetime, timezone
@@ -23,3 +23,8 @@ class ChatRequest(BaseModel):
     chat_prompt: str = Field(min_length=1, description="System prompt for the chat behavior")
     history: list[ChatMessage] = Field(default_factory=list)
     user_input: str = Field(min_length=1)
+    suggestion_id: Optional[str] = None
+
+# optional but extensible, in case i want to add more attr
+class ChatResponse(BaseModel):
+    message: ChatMessage
