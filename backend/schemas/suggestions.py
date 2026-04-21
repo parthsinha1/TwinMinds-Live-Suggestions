@@ -28,6 +28,6 @@ class SuggestionResponse(BaseModel):
 
 class SuggestionRequest(BaseModel):
     transcript_context: str
-    prompt: str = Field(min_length=1)
+    suggestion_prompt: str = Field(min_length=1)
 
     

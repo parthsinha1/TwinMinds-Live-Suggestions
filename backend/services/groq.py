@@ -5,6 +5,15 @@ from fastapi import HTTPException
 base_url="https://api.groq.com/openai/v1"
 
 
+def _raise_for_groq_error(resp) -> None:
+    if resp.status_code == 401:
+        raise HTTPException(status_code=401, detail="Invalid Groq API key")
+    if resp.status_code == 429:
+        raise HTTPException(status_code=429, detail="Rate limited by Groq")
+    if resp.status_code >= 400:
+        raise HTTPException(status_code=400, detail=f"Groq error {resp.status_code}")
+
+
 async def groq_test_key(api_key:str) -> None:
     url = f"{base_url}/chat/completions"
     headers = {"Authorization" : f"Bearer {api_key}"}
@@ -25,18 +34,13 @@ async def groq_test_key(api_key:str) -> None:
     async with httpx.AsyncClient(timeout=timeout) as client:
         resp = await client.post(url, headers=headers, json=payload)
 
-    if resp.status_code == 401:
-        raise HTTPException(status_code=401, detail="Invalid Groq API key")
-    if resp.status_code == 429:
-        raise HTTPException(status_code=429, detail="Rate limited by Groq")
-    if resp.status_code >= 400:
-        raise HTTPException(status_code=400, detail=f"Groq error {resp.status_code}")
+    _raise_for_groq_error(resp)
 
     return None
 
 async def groq_generate_suggestions(api_key: str, prompt: str, transcript_context: str) -> dict:
     url = f"{base_url}/chat/completions"
-    headers = {"Authorization": f"Bearer{api_key}"}
+    headers = {"Authorization": f"Bearer {api_key}"}
     messages = [
         {"role": "system", "content": "Return ONLY valid JSON. No markdown. No extra text."},
         {
@@ -72,3 +76,58 @@ Rules:
         "temperature": 0.3,
         "max_tokens": 450,
     }
+
+    async with httpx.AsyncClient(timeout=45.0) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+    
+    _raise_for_groq_error(resp)
+
+    data = resp.json()
+    content = data["choices"][0]["message"]["content"]
+
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail="Groq returned non-JSON output"
+        )
+    
+
+async def groq_chat_answer(
+    api_key: str,
+    chat_prompt: str,
+    transcript_context: str,
+    history: list[dict],
+    user_input: str,
+) -> str:
+
+    url = f"{base_url}/chat/completions"
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    messages: list[dict] = []
+    messages.append({"role": "system", "content": chat_prompt})
+
+    if transcript_context.strip():
+        messages.append({"role": "system", "content": f"TRANSCRIPT CONTEXT:\n{transcript_context}"})
+
+    # Add prior conversation
+    messages.extend(history)
+
+    # The new question/action from the user
+    messages.append({"role": "user", "content": user_input})
+
+    payload = {
+        "model": "gpt-oss-120b",
+        "messages": messages,
+        "temperature": 0.3,
+        "max_tokens": 800,
+    }
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+
+    _raise_for_groq_error(resp)
+
+    data = resp.json()
+    return data["choices"][0]["message"]["content"]
