@@ -2,7 +2,7 @@ from fastapi import APIRouter, Header, HTTPException
 from services.groq import groq_test_key
 from schemas.common import HealthResponse, ValidateKeyResponse
 from schemas.chat import ChatMessage, ChatRequest, ChatResponse
-from schemas.suggestions import SuggestionBatch, SuggestionItem, SuggestionType
+from schemas.suggestions import SuggestionBatch, SuggestionItem, SuggestionResponse
 
 router = APIRouter()
 
@@ -32,3 +32,11 @@ async def validate_key(authorization: str | None = Header(default=None)):
         raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Key validation failed: {type(e).__name__}")
+    
+
+@router.post("/suggestions", response_model=SuggestionResponse)
+async def suggestions(
+    payload: SuggestionRequest,
+    authorization: str | None = Header(default=None),
+):
+    pass
