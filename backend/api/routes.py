@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Header, HTTPException
 from services.groq import groq_test_key
 from schemas.common import HealthResponse, ValidateKeyResponse
+from schemas.chat import ChatMessage, ChatRequest, ChatResponse
+from schemas.suggestions import SuggestionBatch, SuggestionItem, SuggestionType
+
 router = APIRouter()
 
 
