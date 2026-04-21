@@ -2,7 +2,7 @@ from fastapi import APIRouter, Header, HTTPException
 from services.groq import groq_test_key
 from schemas.common import HealthResponse, ValidateKeyResponse
 from schemas.chat import ChatMessage, ChatRequest, ChatResponse
-from schemas.suggestions import SuggestionBatch, SuggestionItem, SuggestionResponse
+from schemas.suggestions import SuggestionBatch, SuggestionItem, SuggestionResponse, SuggestionRequest
 
 router = APIRouter()
 
@@ -39,4 +39,4 @@ async def suggestions(
     payload: SuggestionRequest,
     authorization: str | None = Header(default=None),
 ):
-    pass
+    

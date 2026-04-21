@@ -26,4 +26,8 @@ class SuggestionBatch(BaseModel):
 class SuggestionResponse(BaseModel):
     batch: SuggestionBatch
 
+class SuggestionRequest(BaseModel):
+    transcript_context: str
+    prompt: str = Field(min_length=1)
+
     
