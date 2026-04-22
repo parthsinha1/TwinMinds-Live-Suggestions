@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Header, HTTPException
-from services.groq import groq_test_key, groq_generate_suggestions
+from services.groq import groq_test_key, groq_generate_suggestions, groq_chat_answer
 from schemas.common import HealthResponse, ValidateKeyResponse
 from schemas.chat import ChatMessage, ChatRequest, ChatResponse
 from schemas.suggestions import SuggestionBatch, SuggestionItem, SuggestionResponse, SuggestionRequest
@@ -88,3 +88,4 @@ async def chat(
     )
     return {"message":message}
     
+

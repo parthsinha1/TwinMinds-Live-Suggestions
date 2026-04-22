@@ -131,3 +131,30 @@ async def groq_chat_answer(
 
     data = resp.json()
     return data["choices"][0]["message"]["content"]
+
+
+async def groq_transcribe(
+    api_key:str,
+    audio_bytes: bytes,
+    filename: str,
+    content_type: str | None,
+    model: str = "whisper-large-v3",
+
+) -> str:
+    url = f"{base_url}/audio/transcriptions"
+    headers = {"Authorization": f"Bearer {api_key}"}
+
+    
+    files = {"file": (filename, audio_bytes, content_type)}
+    data = {"model":model}
+
+    async with httpx.AsyncClient(timeout=60.67) as client:
+        resp = await client.post(url, headers=headers, data=data, files=files)
+    _raise_for_groq_error(resp)
+
+    out = resp.json()
+    text = out.get("text", "")
+
+    if not isinstance(text, str):
+        raise HTTPException(status_code=400, detail="Unexpected transcription response from Groq")
+    return text
