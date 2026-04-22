@@ -3,6 +3,8 @@ from services.groq import groq_test_key, groq_generate_suggestions, groq_chat_an
 from schemas.common import HealthResponse, ValidateKeyResponse
 from schemas.chat import ChatMessage, ChatRequest, ChatResponse
 from schemas.suggestions import SuggestionBatch, SuggestionItem, SuggestionResponse, SuggestionRequest
+from schemas.transcribe import TranscribeResponse
+
 
 router = APIRouter()
 
@@ -87,5 +89,11 @@ async def chat(
         suggestion_id=payload.suggestion_id,
     )
     return {"message":message}
+
+
+@router.post("/transcribe", response_model=TranscribeResponse)
+async def transcribe(
+    payload: TranscribeResponse
+)
     
 

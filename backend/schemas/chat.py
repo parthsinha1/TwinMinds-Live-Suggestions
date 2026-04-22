@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal, Optional
+from typing import Literal
 import uuid
 from datetime import datetime, timezone
 
@@ -16,14 +16,14 @@ class ChatMessage(BaseModel):
     ts: str = Field(default_factory=now_iso)
     role: Role
     content: str = Field(min_length=1)
-    suggestion_id: Optional[str] = None
+    suggestion_id: str | None = None
 
 class ChatRequest(BaseModel):
     transcript_context: str = Field(default="", description="Recent transcript text passed as context")
     chat_prompt: str = Field(min_length=1, description="System prompt for the chat behavior")
     history: list[ChatMessage] = Field(default_factory=list)
     user_input: str = Field(min_length=1)
-    suggestion_id: Optional[str] = None
+    suggestion_id: str | None = None
 
 # optional but extensible, in case i want to add more attr
 class ChatResponse(BaseModel):

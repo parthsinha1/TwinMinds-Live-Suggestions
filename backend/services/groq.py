@@ -152,9 +152,4 @@ async def groq_transcribe(
         resp = await client.post(url, headers=headers, data=data, files=files)
     _raise_for_groq_error(resp)
 
-    out = resp.json()
-    text = out.get("text", "")
-
-    if not isinstance(text, str):
-        raise HTTPException(status_code=400, detail="Unexpected transcription response from Groq")
-    return text
+    return resp.json()
