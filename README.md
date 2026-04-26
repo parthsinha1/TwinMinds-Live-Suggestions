@@ -43,7 +43,7 @@ You can get a free Groq API key at [console.groq.com](https://console.groq.com).
 | Audio capture | **Browser `MediaRecorder` API** | No extra dependency. Works in every modern browser and outputs webm/opus chunks that Whisper accepts directly. |
 | Markdown rendering | **react-markdown + remark-gfm** | Chat responses render with proper formatting rather than raw markdown text. |
 
-**Separation of concerns.** The frontend handles recording, state, and rendering. The backend handles all Groq API calls — transcription, suggestions, and chat. The user's API key is passed as a Bearer token per request and never stored server-side.
+**Separation of concerns.** The frontend handles recording, state, and rendering. The backend handles all Groq API calls: transcription, suggestions, and chat. The user's API key is passed as a Bearer token per request and never stored server-side.
 
 ---
 
@@ -51,7 +51,7 @@ You can get a free Groq API key at [console.groq.com](https://console.groq.com).
 
 ### Suggestion prompt
 
-The model is told to generate exactly 3 suggestions grounded entirely in what was just said — no external advice, no invented facts. It picks the most useful mix of types from the transcript rather than always using the same combination. Output is strict JSON with no markdown wrapping.
+The model is told to generate exactly 3 suggestions grounded entirely in what was just said. No external advice, no invented facts. It picks the most useful mix of types from the transcript rather than always using the same combination. Output is strict JSON with no markdown wrapping.
 
 ### Chat prompt
 
@@ -96,9 +96,9 @@ frontend/src/
   App.jsx                  All state, recorder logic, suggestion/chat handlers, settings
   App.css                  All styles: layout, columns, panels, mic button, composer
   components/
-    TranscriptPanel.jsx    Left column — mic button, transcript scroll
-    SuggestionsPanel.jsx   Middle column — suggestion batches, refresh button
-    ChatPanel.jsx          Right column — chat messages, composer, fullscreen mode
+    TranscriptPanel.jsx    Left column: mic button, transcript scroll
+    SuggestionsPanel.jsx   Middle column: suggestion batches, refresh button
+    ChatPanel.jsx          Right column: chat messages, composer, fullscreen mode
     SettingsPanel.jsx      API key input, prompt editors, context window settings
   lib/
     api.js                 Axios wrappers for all backend endpoints
