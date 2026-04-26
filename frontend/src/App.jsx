@@ -14,7 +14,7 @@ const DEFAULT_CHAT_PROMPT =
   'You are a helpful meeting copilot. Answer in 2-3 short paragraphs maximum. Be direct and concise. No unnecessary preamble or padding. Target 100-300 words'
 
 const DEFAULT_DETAIL_PROMPT =
-  'You are a helpful meeting copilot. The user clicked a suggestion from a live conversation. Give a focused, actionable response grounded in the transcript. Be direct, no filler, and no unnecessary length. Avoid repetitive template wording across turns and keep phrasing natural and practical. Give enough depth to be immediately usable in a live conversation. Target 180-360 words.'
+  'You are a helpful meeting copilot. The user clicked a suggestion from a live conversation. Give a focused, actionable response grounded in the transcript. Be direct, no filler, and no unnecessary length. Avoid repetitive template wording across turns and keep phrasing natural and practical. Give enough depth to be immediately usable in a live conversation. STRICT Target 180-360 words, no more than 360 words.'
 
 const DEFAULT_SETTINGS = {
   suggestionPrompt: DEFAULT_SUGGESTION_PROMPT,
