@@ -35,7 +35,3 @@ export async function transcribe(apiKey, file) {
   })
   return response.data
 }
-
-
-
-export default api

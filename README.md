@@ -1,6 +1,6 @@
 # TwinMind Live Suggestions
 
-A web app that listens to your microphone and surfaces three useful suggestions every ~30 seconds based on what's being said. Clicking a suggestion opens a detailed answer in the chat panel, grounded in the full transcript.
+This is a web app that listens to your microphone input and displays three useful suggestions every ~30 seconds based on what's being said. Clicking a suggestion opens a detailed answer in the chat panel, grounded in the full transcript.
 
 Built for the TwinMind Live Suggestions assignment (April 2026).
 
@@ -33,7 +33,7 @@ You can get a free Groq API key at [console.groq.com](https://console.groq.com).
 
 ## Stack and model choices
 
-| Layer | Choice | Why |
+| Layer | Choice | Reasoning |
 |---|---|---|
 | Frontend framework | **React 19 + Vite** | Fast dev server, minimal config, straightforward component model. |
 | Backend framework | **FastAPI** | Async Python, automatic OpenAPI docs, clean dependency injection for auth. |
@@ -43,7 +43,7 @@ You can get a free Groq API key at [console.groq.com](https://console.groq.com).
 | Audio capture | **Browser `MediaRecorder` API** | No extra dependency. Works in every modern browser and outputs webm/opus chunks that Whisper accepts directly. |
 | Markdown rendering | **react-markdown + remark-gfm** | Chat responses render with proper formatting rather than raw markdown text. |
 
-**Separation of concerns.** The frontend handles recording, state, and rendering. The backend handles all Groq API calls: transcription, suggestions, and chat. The user's API key is passed as a Bearer token per request and never stored server-side.
+The frontend handles recording, state, and rendering. The backend handles all Groq API calls: transcription, suggestions, and chat. The user's API key is passed as a Bearer token per request and never stored server-side.
 
 ---
 

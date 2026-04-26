@@ -397,7 +397,7 @@ function App() {
         <div>
           <h1 className="app-title">TwinMind Live Suggestions</h1>
           <p className="app-health">
-            Backend health:
+            App status:
             <span className="status-pill">{healthStatus}</span>
           </p>
         </div>

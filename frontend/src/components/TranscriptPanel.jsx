@@ -40,7 +40,7 @@ export default function TranscriptPanel({
         {transcriptChunks.length === 0
           ? <div className="transcript-empty">Start recording to see the live transcript. Chunks commit every 30 seconds.</div>
           : transcriptChunks.map((chunk) => (
-            <p key={chunk.id} style={{ margin: '0 0 8px' }}>
+            <p key={chunk.id} className="transcript-chunk">
               <small>{new Date(chunk.ts).toLocaleTimeString()}:</small> {chunk.text}
             </p>
           ))

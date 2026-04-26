@@ -287,6 +287,17 @@ button:disabled {
   padding: 10px 0 0;
 }
 
+.transcript-chunk {
+  margin: 0;
+  padding: 10px 0 12px;
+  border-bottom: 1px solid rgba(51, 0, 0, 0.07);
+  line-height: 1.55;
+}
+
+.transcript-chunk:last-of-type {
+  border-bottom: none;
+}
+
 .transcript-empty {
   font-size: 0.87rem;
   color: var(--text-soft);
