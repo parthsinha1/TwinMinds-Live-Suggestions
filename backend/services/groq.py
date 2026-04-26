@@ -9,12 +9,21 @@ chat_model = "openai/gpt-oss-120b"
 
 
 def _raise_for_groq_error(resp) -> None:
+    detail = None
+    try:
+        detail = resp.json().get("error", {}).get("message")
+    except Exception:
+        detail = None
+
     if resp.status_code == 401:
         raise HTTPException(status_code=401, detail="Invalid Groq API key")
     if resp.status_code == 429:
         raise HTTPException(status_code=429, detail="Rate limited by Groq")
     if resp.status_code >= 400:
-        raise HTTPException(status_code=400, detail=f"Groq error {resp.status_code}")
+        msg = f"Groq error {resp.status_code}"
+        if detail:
+            msg = f"{msg}: {detail}"
+        raise HTTPException(status_code=400, detail=msg)
 
 
 async def groq_test_key(api_key:str) -> None:
@@ -57,18 +66,30 @@ TRANSCRIPT CONTEXT:
 Return JSON in this exact format:
 {{
   "items": [
-    {{"kind": "query", "preview": "...", "detail_prompt": "..."}},
-    {{"kind": "clarification", "preview": "...", "detail_prompt": "..."}},
-    {{"kind": "fact_check", "preview": "...", "detail_prompt": "..."}}
+    {{"kind": "<pick the most useful type>", "preview": "...", "detail_prompt": "..."}},
+    {{"kind": "<pick the most useful type>", "preview": "...", "detail_prompt": "..."}},
+    {{"kind": "<pick the most useful type>", "preview": "...", "detail_prompt": "..."}}
   ]
 }}
+
+Kind definitions — choose whichever 3 fit the transcript best from the user's perspective:
+- "talking_point": rephrase something the speaker said as a first-person statement they could share or expand on.
+- "query": a question the user could ask an AI assistant for help based on the transcript. Phrase it as "How do I..." or "What is..." and keep it about the topic itself, not about what the speaker "meant".
+- "answer_draft": if the transcript contains a question, draft a short answer to it.
+- "fact_check": if the transcript contains a verifiable claim or statistic, surface it for verification.
+- "clarification": a question the user could ask an AI to explain a concept from the transcript in general terms. Phrase it as "Can you explain..." or "What does ... mean" about the concept itself from the user's perspective. 
 
 Rules:
 - Output ONLY JSON. No markdown. No code fences.
 - items must contain EXACTLY 3 elements.
-- kind must be one of: query, fact_check, clarification.
-- preview must be short (1-2 sentences).
-- detail_prompt can be a longer instruction/question to get a better answer when clicked.
+- kind must be one of: talking_point, query, answer_draft, fact_check, clarification.
+- Choose the mix that is most useful given what was actually said. Do not always use the same 3 types.
+- Suggestions must be grounded in the transcript — do not add external advice or information not mentioned.
+- preview must be 1-2 sentences, useful on its own without clicking.
+- detail_prompt should ask for a deeper answer specifically tied to what was said.
+- For query and clarification, do NOT use second-person references to the speaker such as: "what you mean", "you mentioned", "for you", or "can you share".
+- Preferred style for clarification in this case: "Can you explain what it means to have a clear mind for better articulation in interviews?"
+- Avoid this style: "Can you explain what you mean by a clear mind helping to articulate thoughts better?"
 """,
         },
     ]
@@ -88,7 +109,6 @@ Rules:
     data = resp.json()
     content = data["choices"][0]["message"]["content"].strip()
 
-    # strip markdown code fences if the model wraps output despite instructions
     if content.startswith("```"):
         content = content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
 
@@ -118,10 +138,8 @@ async def groq_chat_answer(
     if transcript_context.strip():
         messages.append({"role": "system", "content": f"TRANSCRIPT CONTEXT:\n{transcript_context}"})
 
-    # Add prior conversation
     messages.extend({"role": m.role, "content": m.content} for m in history)
 
-    # The new question/action from the user
     messages.append({"role": "user", "content": user_input})
 
     payload = {

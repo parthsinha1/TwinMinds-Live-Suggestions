@@ -10,12 +10,13 @@ def new_id() -> str:
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
-SuggestionType = Literal["query", "fact_check", "clarification"]
+SuggestionType = Literal["query", "talking_point", "answer_draft", "fact_check", "clarification"]
 
 class SuggestionItem(BaseModel):
     id:str = Field(default_factory=new_id)
     kind: SuggestionType
     preview: str = Field(min_length=1)
+    detail_prompt: str | None = None
 
 class SuggestionBatch(BaseModel):
     id: str = Field(default_factory=new_id)

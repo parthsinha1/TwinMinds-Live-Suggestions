@@ -1,24 +1,24 @@
 export default function SuggestionsPanel({ suggestionBatches, onSuggestionClick }) {
   return (
-    <div style={{ border: '1px solid #ddd', borderRadius: 8, padding: 12 }}>
-      <h2 style={{ marginTop: 0 }}>Live suggestions</h2>
-      <div style={{ fontSize: 13, marginBottom: 8 }}>Newest batch appears on top.</div>
-      <div style={{ maxHeight: 420, overflow: 'auto', display: 'grid', gap: 10 }}>
+    <div className="panel column-panel">
+      <h2 className="panel-title">Live suggestions</h2>
+      <div className="panel-note">Newest batch appears on top.</div>
+      <div className="surface-scroll stack-md" style={{ maxHeight: 420 }}>
         {suggestionBatches.length === 0 && <div>No suggestions yet.</div>}
         {suggestionBatches.map((batch) => (
-          <div key={batch.id} style={{ border: '1px solid #eee', padding: 8, borderRadius: 6 }}>
-            <div style={{ fontSize: 12, marginBottom: 6 }}>
+          <div key={batch.id} className="suggestion-batch">
+            <div className="batch-time">
               Batch time: {new Date(batch.ts).toLocaleTimeString()}
             </div>
-            <div style={{ display: 'grid', gap: 6 }}>
+            <div className="stack-sm">
               {batch.items.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => onSuggestionClick(item)}
-                  style={{ textAlign: 'left', padding: 8, borderRadius: 6, border: '1px solid #ddd' }}
+                  className="suggestion-button"
                 >
-                  <strong>{item.kind}</strong>
+                  <span className="chip-kind">{item.kind}</span>
                   <div>{item.preview}</div>
                 </button>
               ))}
