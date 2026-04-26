@@ -9,7 +9,7 @@ app.add_middleware(
 	allow_origins=[
         "http://localhost:5173",
         "http://localhost:3000",
-        "https://twinmind-live-suggestions.vercel.app",  # replace with your actual Vercel URL
+        "https://twinminds-live-suggestions-1.onrender.com",  # production frontend
     ],
 	allow_credentials=True,
 	allow_methods=["*"],
