@@ -25,7 +25,7 @@ class SuggestionBatch(BaseModel):
 
 # extensibility
 class SuggestionResponse(BaseModel):
-    batch: SuggestionBatch
+    batch: SuggestionBatch | None
 
 class SuggestionRequest(BaseModel):
     transcript_context: str

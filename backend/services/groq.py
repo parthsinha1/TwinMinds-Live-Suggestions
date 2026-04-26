@@ -72,7 +72,7 @@ Return JSON in this exact format:
   ]
 }}
 
-Kind definitions — choose whichever 3 fit the transcript best from the user's perspective:
+Kind definitions. choose whichever 3 fit the transcript best from the user's perspective:
 - "talking_point": rephrase something the speaker said as a first-person statement they could share or expand on.
 - "query": a question the user could ask an AI assistant for help based on the transcript. Phrase it as "How do I..." or "What is..." and keep it about the topic itself, not about what the speaker "meant".
 - "answer_draft": if the transcript contains a question, draft a short answer to it.
@@ -84,7 +84,7 @@ Rules:
 - items must contain EXACTLY 3 elements.
 - kind must be one of: talking_point, query, answer_draft, fact_check, clarification.
 - Choose the mix that is most useful given what was actually said. Do not always use the same 3 types.
-- Suggestions must be grounded in the transcript — do not add external advice or information not mentioned.
+- Suggestions must be grounded in the transcript, do not add external advice or information not mentioned.
 - preview must be 1-2 sentences, useful on its own without clicking.
 - detail_prompt should ask for a deeper answer specifically tied to what was said.
 - For query and clarification, do NOT use second-person references to the speaker such as: "what you mean", "you mentioned", "for you", or "can you share".
@@ -99,6 +99,7 @@ Rules:
         "messages": messages,
         "temperature": 0.3,
         "max_tokens": 700,
+        "response_format": {"type": "json_object"},
     }
 
     async with httpx.AsyncClient(timeout=45.0) as client:
@@ -109,8 +110,8 @@ Rules:
     data = resp.json()
     content = data["choices"][0]["message"]["content"].strip()
 
-    if content.startswith("```"):
-        content = content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+    #if content.startswith("```"):
+     #   content = content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
 
     try:
         return json.loads(content)

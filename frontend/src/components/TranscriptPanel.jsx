@@ -1,8 +1,9 @@
 import { useRef, useEffect } from 'react'
+import { Mic, MicOff } from 'lucide-react'
 
 export default function TranscriptPanel({
-  transcriptChunks, isRecording, isTranscribing, isRefreshing,
-  canUseApi, onStart, onStop, onRefresh, onExport,
+  transcriptChunks, isRecording, isTranscribing,
+  canUseApi, onStart, onStop,
 }) {
   const endRef = useRef(null)
 
@@ -12,28 +13,38 @@ export default function TranscriptPanel({
 
   return (
     <div className="panel column-panel">
-      <h2 className="panel-title">Transcript</h2>
-      <div className="button-row" style={{ marginBottom: 10 }}>
-        {!isRecording ? (
-          <button type="button" onClick={onStart} disabled={!canUseApi}>Start mic</button>
-        ) : (
-          <button type="button" onClick={onStop}>Stop mic</button>
-        )}
-        <button className="button-secondary" type="button" onClick={onRefresh} disabled={!canUseApi || isRefreshing}>
-          {isRefreshing ? 'Refreshing...' : 'Refresh'}
+      {/* Header */}
+      <div className="transcript-header">
+        <h2 className="panel-title">Transcript</h2>
+        {isTranscribing && <span className="transcript-transcribing">transcribing…</span>}
+      </div>
+
+      {/* Recording controls */}
+      <div className="transcript-controls">
+        <button
+          type="button"
+          className={`mic-btn${isRecording ? ' mic-btn--recording' : ''}`}
+          onClick={isRecording ? onStop : onStart}
+          disabled={!canUseApi}
+          aria-label={isRecording ? 'Stop recording' : 'Start recording'}
+        >
+          {isRecording ? <MicOff size={22} strokeWidth={2} /> : <Mic size={22} strokeWidth={2} />}
         </button>
-        <button className="button-secondary" type="button" onClick={onExport}>Export</button>
+        <span className="panel-note" style={{ margin: 0 }}>
+          {isRecording ? 'Recording...' : 'Not recording'}
+        </span>
       </div>
-      <div className="panel-note">
-        {isRecording ? 'Recording...' : 'Not recording'}{isTranscribing ? ' | transcribing...' : ''}
-      </div>
-      <div className="surface-scroll" style={{ maxHeight: 320 }}>
-        {transcriptChunks.length === 0 && <div>No transcript yet.</div>}
-        {transcriptChunks.map((chunk) => (
-          <p key={chunk.id} style={{ margin: '0 0 8px' }}>
-            <small>{new Date(chunk.ts).toLocaleTimeString()}:</small> {chunk.text}
-          </p>
-        ))}
+
+      {/* Scrolling transcript */}
+      <div className="transcript-scroll">
+        {transcriptChunks.length === 0
+          ? <div className="transcript-empty">Start recording to see the live transcript. Chunks commit every 30 seconds.</div>
+          : transcriptChunks.map((chunk) => (
+            <p key={chunk.id} style={{ margin: '0 0 8px' }}>
+              <small>{new Date(chunk.ts).toLocaleTimeString()}:</small> {chunk.text}
+            </p>
+          ))
+        }
         <div ref={endRef} />
       </div>
     </div>

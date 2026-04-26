@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Download } from 'lucide-react'
 import { checkHealth, chat, suggestions, transcribe, validateKey } from './lib/api'
 import SettingsPanel from './components/SettingsPanel'
 import TranscriptPanel from './components/TranscriptPanel'
@@ -7,10 +8,23 @@ import ChatPanel from './components/ChatPanel'
 import './App.css'
 
 const DEFAULT_SUGGESTION_PROMPT =
-  'You are a live conversation copilot. Based on what the speaker just said, generate exactly 3 suggestions that reflect or extend what was spoken. Do NOT give external advice, tips, or facts. Instead: rephrase what the speaker said as a talking point they could share, ask a question directly about what they described, or seek clarification on something they mentioned. Everything must come directly from the transcript — not from outside knowledge.'
+  'You are a live conversation copilot. Based on what the speaker just said, generate exactly 3 suggestions that reflect or extend what was spoken. Do NOT give external advice, tips, or facts. Instead: rephrase what the speaker said as a talking point they could share, ask a question directly about what they described, or seek clarification on something they mentioned. Everything must come directly from the transcript, not from outside knowledge.'
 
 const DEFAULT_CHAT_PROMPT =
   'You are a helpful meeting copilot. Give actionable, concise, context-aware answers based on transcript and chat history. If context is insufficient, say what is missing.'
+
+const DEFAULT_DETAIL_PROMPT =
+  'You are a helpful meeting copilot. The user clicked a suggestion from a live conversation. Give a detailed, well-structured, and actionable response grounded in the transcript. Be direct and practical. Go deeper than a surface-level answer without being unnecessarily long.'
+
+const DEFAULT_SETTINGS = {
+  suggestionPrompt: DEFAULT_SUGGESTION_PROMPT,
+  chatPrompt: DEFAULT_CHAT_PROMPT,
+  detailPrompt: DEFAULT_DETAIL_PROMPT,
+  suggestionContextChars: 2000,
+  chatContextChars: 6000,
+  detailContextChars: 4000,
+}
+
 const CHUNK_MS = 30000
 
 const isoNow = () => new Date().toISOString()
@@ -35,9 +49,48 @@ function App() {
 
   const [suggestionPrompt, setSuggestionPrompt] = useState(DEFAULT_SUGGESTION_PROMPT)
   const [chatPrompt, setChatPrompt] = useState(DEFAULT_CHAT_PROMPT)
+  const [detailPrompt, setDetailPrompt] = useState(DEFAULT_DETAIL_PROMPT)
+  const [suggestionContextChars, setSuggestionContextChars] = useState(2000)
+  const [chatContextChars, setChatContextChars] = useState(6000)
+  const [detailContextChars, setDetailContextChars] = useState(4000)
 
   const [errorText, setErrorText] = useState('')
+  const [keyError, setKeyError] = useState('')
   const [showSettings, setShowSettings] = useState(false)
+
+  const [savedSettings, setSavedSettings] = useState(DEFAULT_SETTINGS)
+  const [settingsSavedFlash, setSettingsSavedFlash] = useState(false)
+
+  const settingsDirty =
+    suggestionPrompt !== savedSettings.suggestionPrompt ||
+    chatPrompt !== savedSettings.chatPrompt ||
+    detailPrompt !== savedSettings.detailPrompt ||
+    suggestionContextChars !== savedSettings.suggestionContextChars ||
+    chatContextChars !== savedSettings.chatContextChars ||
+    detailContextChars !== savedSettings.detailContextChars
+
+  const settingsResettable =
+    suggestionPrompt !== DEFAULT_SETTINGS.suggestionPrompt ||
+    chatPrompt !== DEFAULT_SETTINGS.chatPrompt ||
+    detailPrompt !== DEFAULT_SETTINGS.detailPrompt ||
+    suggestionContextChars !== DEFAULT_SETTINGS.suggestionContextChars ||
+    chatContextChars !== DEFAULT_SETTINGS.chatContextChars ||
+    detailContextChars !== DEFAULT_SETTINGS.detailContextChars
+
+  function onSaveSettings() {
+    setSavedSettings({ suggestionPrompt, chatPrompt, detailPrompt, suggestionContextChars, chatContextChars, detailContextChars })
+    setSettingsSavedFlash(true)
+    setTimeout(() => setSettingsSavedFlash(false), 2000)
+  }
+
+  function onResetSettings() {
+    setSuggestionPrompt(DEFAULT_SETTINGS.suggestionPrompt)
+    setChatPrompt(DEFAULT_SETTINGS.chatPrompt)
+    setDetailPrompt(DEFAULT_SETTINGS.detailPrompt)
+    setSuggestionContextChars(DEFAULT_SETTINGS.suggestionContextChars)
+    setChatContextChars(DEFAULT_SETTINGS.chatContextChars)
+    setDetailContextChars(DEFAULT_SETTINGS.detailContextChars)
+  }
 
   const recorderRef = useRef(null)
   const streamRef = useRef(null)
@@ -62,8 +115,8 @@ function App() {
 
   const transcriptContext = useMemo(() => {
     const full = transcriptChunks.map((x) => x.text).join('\n').trim()
-    return full.slice(-5000)
-  }, [transcriptChunks])
+    return full.slice(-chatContextChars)
+  }, [transcriptChunks, chatContextChars])
 
   async function onValidateKey() {
     if (!apiKeyInput.trim()) {
@@ -73,6 +126,7 @@ function App() {
 
     setIsValidatingKey(true)
     setErrorText('')
+    setKeyError('')
     try {
       const data = await validateKey(apiKeyInput.trim())
       if (data?.valid) {
@@ -82,11 +136,12 @@ function App() {
       } else {
         setApiKey('')
         setKeyStatus('invalid')
+        setKeyError('Invalid API key. Please check and try again.')
       }
     } catch (error) {
       setApiKey('')
       setKeyStatus('invalid')
-      setErrorText(error?.response?.data?.detail || error.message)
+      setKeyError(error?.response?.data?.detail || error.message || 'Invalid API key.')
     } finally {
       setIsValidatingKey(false)
     }
@@ -137,7 +192,7 @@ function App() {
       const nextChunks = [...transcriptChunksRef.current, { id: idNow('tx'), ts: isoNow(), text }]
       transcriptChunksRef.current = nextChunks
       setTranscriptChunks(nextChunks)
-      const nextContext = nextChunks.map((x) => x.text).join('\n').trim().slice(-5000)
+      const nextContext = nextChunks.map((x) => x.text).join('\n').trim().slice(-suggestionContextChars)
 
       // Only request suggestions when there's enough content for the model to work with
       const wordCount = text.trim().split(/\s+/).length
@@ -255,7 +310,7 @@ function App() {
   }
 
   async function sendChat(userText, suggestionId = null, options = {}) {
-    const { exactText = false } = options
+    const { exactText = false, promptOverride = null, contextOverride = null } = options
     if (!apiKey) {
       setErrorText('Validate API key first')
       return
@@ -280,8 +335,8 @@ function App() {
 
     try {
       const payload = {
-        transcript_context: transcriptContext,
-        chat_prompt: chatPrompt,
+        transcript_context: contextOverride ?? transcriptContext,
+        chat_prompt: promptOverride ?? chatPrompt,
         history: priorHistory,
         user_input: text,
         suggestion_id: suggestionId,
@@ -306,7 +361,15 @@ function App() {
   }
 
   function onSuggestionClick(item) {
-    sendChat(item.preview, item.id, { exactText: true })
+    const detailContext = transcriptChunks.map((x) => x.text).join('\n').trim().slice(-detailContextChars)
+    const resolvedPrompt = detailPrompt
+      .replace(/\{\{kind\}\}/g, item.kind || '')
+      .replace(/\{\{preview\}\}/g, item.preview || '')
+    sendChat(item.preview, item.id, {
+      exactText: true,
+      promptOverride: resolvedPrompt,
+      contextOverride: detailContext,
+    })
   }
 
   function exportSession() {
@@ -340,9 +403,15 @@ function App() {
         </div>
 
         {!showOnboarding && (
-          <button type="button" className="button-secondary" onClick={() => setShowSettings(true)}>
-            Settings
-          </button>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <button type="button" className="button-secondary" onClick={exportSession} aria-label="Export session">
+              <Download size={15} strokeWidth={2.2} style={{ verticalAlign: 'middle', marginRight: 5 }} />
+              Export
+            </button>
+            <button type="button" className="button-secondary" onClick={() => setShowSettings(true)}>
+              Settings
+            </button>
+          </div>
         )}
       </div>
 
@@ -350,14 +419,16 @@ function App() {
         <section className="columns">
           <TranscriptPanel
             transcriptChunks={transcriptChunks}
-            isRecording={isRecording} isTranscribing={isTranscribing} isRefreshing={isRefreshing}
+            isRecording={isRecording} isTranscribing={isTranscribing}
             canUseApi={canUseApi}
             onStart={startRecording} onStop={stopRecording}
-            onRefresh={onManualRefresh} onExport={exportSession}
           />
           <SuggestionsPanel
             suggestionBatches={suggestionBatches}
             onSuggestionClick={onSuggestionClick}
+            isRefreshing={isRefreshing}
+            canUseApi={canUseApi}
+            onRefresh={onManualRefresh}
           />
           <ChatPanel
             chatHistory={chatHistory}
@@ -376,18 +447,27 @@ function App() {
                 {showOnboarding ? 'Connect Groq API Key' : 'Settings'}
               </h2>
               {!showOnboarding && (
-                <button type="button" className="button-secondary" onClick={() => setShowSettings(false)}>
-                  Close
+                <button type="button" className="settings-close-x" onClick={() => setShowSettings(false)} aria-label="Close settings">
+                  ✕
                 </button>
               )}
             </div>
 
             <SettingsPanel
               apiKeyInput={apiKeyInput} setApiKeyInput={setApiKeyInput}
-              keyStatus={keyStatus} isValidatingKey={isValidatingKey} onValidateKey={onValidateKey}
+              keyStatus={keyStatus} keyError={keyError} isValidatingKey={isValidatingKey} onValidateKey={onValidateKey}
               suggestionPrompt={suggestionPrompt} setSuggestionPrompt={setSuggestionPrompt}
               chatPrompt={chatPrompt} setChatPrompt={setChatPrompt}
+              detailPrompt={detailPrompt} setDetailPrompt={setDetailPrompt}
+              suggestionContextChars={suggestionContextChars} setSuggestionContextChars={setSuggestionContextChars}
+              chatContextChars={chatContextChars} setChatContextChars={setChatContextChars}
+              detailContextChars={detailContextChars} setDetailContextChars={setDetailContextChars}
               apiOnly={showOnboarding}
+              settingsDirty={settingsDirty}
+              settingsResettable={settingsResettable}
+              settingsSavedFlash={settingsSavedFlash}
+              onSaveSettings={onSaveSettings}
+              onResetSettings={onResetSettings}
             />
           </div>
         </div>
