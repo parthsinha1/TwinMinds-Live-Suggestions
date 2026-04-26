@@ -58,8 +58,18 @@ async def suggestions(
 
     # enforce exactly 3 suggestions 
     items_raw = raw.get("items", [])
-    items = [SuggestionItem(**x) for x in items_raw]
-    batch = SuggestionBatch(items=items)
+    valid_items = []
+    for x in items_raw:
+        try:
+            valid_items.append(SuggestionItem(**x))
+        except Exception:
+            pass
+
+    if len(valid_items) < 3:
+        # Groq returned fewer than 3 valid items, skip this batch silently
+        return {"batch": None}
+
+    batch = SuggestionBatch(items=valid_items[:3])
 
     return {"batch": batch}
 

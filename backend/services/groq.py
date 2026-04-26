@@ -48,8 +48,6 @@ async def groq_test_key(api_key:str) -> None:
 
     _raise_for_groq_error(resp)
 
-    return None
-
 async def groq_generate_suggestions(api_key: str, prompt: str, transcript_context: str) -> dict:
     url = f"{base_url}/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}"}
@@ -98,20 +96,29 @@ Rules:
         "model": chat_model,
         "messages": messages,
         "temperature": 0.3,
-        "max_tokens": 700,
+        "max_tokens": 1000,
         "response_format": {"type": "json_object"},
     }
 
     async with httpx.AsyncClient(timeout=45.0) as client:
         resp = await client.post(url, headers=headers, json=payload)
-    
+
+    if resp.status_code == 400:
+        payload_fallback = {k: v for k, v in payload.items() if k != "response_format"}
+        async with httpx.AsyncClient(timeout=45.0) as client:
+            resp = await client.post(url, headers=headers, json=payload_fallback)
+
     _raise_for_groq_error(resp)
 
     data = resp.json()
     content = data["choices"][0]["message"]["content"].strip()
+    
+    # debug print
+    #print("[groq suggestions raw]", repr(content))
 
-    #if content.startswith("```"):
-     #   content = content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+    # strip markdown code fences if present
+    if content.startswith("```"):
+        content = content.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
 
     try:
         return json.loads(content)
@@ -147,7 +154,7 @@ async def groq_chat_answer(
         "model": chat_model,
         "messages": messages,
         "temperature": 0.3,
-        "max_tokens": 800,
+        "max_tokens": 1200,
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:
