@@ -99,18 +99,27 @@ function App() {
   const transcriptChunksRef = useRef([])
 
   useEffect(() => {
-    checkHealth()
-      .then((data) => {
-        if (data?.ok) {
-          setHealthStatus('connected')
-        } else {
-          setHealthStatus('unexpected response')
-        }
-      })
-      .catch((error) => {
-        setHealthStatus('backend unreachable')
-        console.error('Health check failed:', error?.response?.data || error.message)
-      })
+    const tryHealth = () =>
+      checkHealth()
+        .then((data) => {
+          if (data?.ok) {
+            setHealthStatus('connected')
+          } else {
+            setHealthStatus('unexpected response')
+          }
+        })
+        .catch(() => {
+          // retry once after 20s cuz render cold starts around 50s
+          setTimeout(() => {
+            checkHealth()
+              .then((data) => {
+                if (data?.ok) setHealthStatus('connected')
+                else setHealthStatus('unexpected response')
+              })
+              .catch(() => setHealthStatus('backend unreachable'))
+          }, 20000)
+        })
+    tryHealth()
   }, [])
 
   const transcriptContext = useMemo(() => {
@@ -396,10 +405,12 @@ function App() {
       <div className="app-header-row">
         <div>
           <h1 className="app-title">TwinMind Live Suggestions</h1>
+          {!showOnboarding && (
           <p className="app-health">
             App status:
             <span className="status-pill">{healthStatus}</span>
           </p>
+          )}
         </div>
 
         {!showOnboarding && (

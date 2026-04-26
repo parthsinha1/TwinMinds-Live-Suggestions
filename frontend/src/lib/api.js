@@ -6,7 +6,7 @@ const api = axios.create({
 })
 
 export async function checkHealth() {
-  const response = await api.get("/health")
+  const response = await api.get("/health", { timeout: 60000 })
   return response.data
 }
 
