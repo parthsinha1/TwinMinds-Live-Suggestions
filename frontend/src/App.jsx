@@ -11,10 +11,10 @@ const DEFAULT_SUGGESTION_PROMPT =
   'You are a live conversation copilot. Based on what the speaker just said, generate exactly 3 suggestions that reflect or extend what was spoken. Do NOT give external advice, tips, or facts. Instead: rephrase what the speaker said as a talking point they could share, ask a question directly about what they described, or seek clarification on something they mentioned. Everything must come directly from the transcript, not from outside knowledge.'
 
 const DEFAULT_CHAT_PROMPT =
-  'You are a helpful meeting copilot. Give actionable, concise, context-aware answers based on transcript and chat history. If context is insufficient, say what is missing.'
+  'You are a helpful meeting copilot. Answer in 2-3 short paragraphs maximum. Be direct and concise. No unnecessary preamble or padding. Target 100-300 words'
 
 const DEFAULT_DETAIL_PROMPT =
-  'You are a helpful meeting copilot. The user clicked a suggestion from a live conversation. Give a detailed, well-structured, and actionable response grounded in the transcript. Be direct and practical. Go deeper than a surface-level answer without being unnecessarily long.'
+  'You are a helpful meeting copilot. The user clicked a suggestion from a live conversation. Give a focused, actionable response grounded in the transcript. Be direct, no filler, and no unnecessary length. Avoid repetitive template wording across turns and keep phrasing natural and practical. Give enough depth to be immediately usable in a live conversation. Target 180-360 words.'
 
 const DEFAULT_SETTINGS = {
   suggestionPrompt: DEFAULT_SUGGESTION_PROMPT,
@@ -319,7 +319,7 @@ function App() {
   }
 
   async function sendChat(userText, suggestionId = null, options = {}) {
-    const { exactText = false, promptOverride = null, contextOverride = null } = options
+    const { exactText = false, promptOverride = null, contextOverride = null, maxTokens = 500 } = options
     if (!apiKey) {
       setErrorText('Validate API key first')
       return
@@ -349,6 +349,7 @@ function App() {
         history: priorHistory,
         user_input: text,
         suggestion_id: suggestionId,
+        max_tokens: maxTokens,
       }
 
       const data = await chat(apiKey, payload)
@@ -378,6 +379,7 @@ function App() {
       exactText: true,
       promptOverride: resolvedPrompt,
       contextOverride: detailContext,
+      maxTokens: 800,
     })
   }
 

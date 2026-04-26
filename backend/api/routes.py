@@ -84,6 +84,7 @@ async def chat(
         transcript_context=payload.transcript_context,
         history=payload.history,
         user_input=payload.user_input,
+        max_tokens=payload.max_tokens,
     )
 
     message = ChatMessage(

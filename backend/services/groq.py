@@ -135,6 +135,7 @@ async def groq_chat_answer(
     transcript_context: str,
     history: list[ChatMessage],
     user_input: str,
+    max_tokens: int = 500,
 ) -> str:
 
     url = f"{base_url}/chat/completions"
@@ -154,7 +155,7 @@ async def groq_chat_answer(
         "model": chat_model,
         "messages": messages,
         "temperature": 0.3,
-        "max_tokens": 1200,
+        "max_tokens": max_tokens,
     }
 
     async with httpx.AsyncClient(timeout=60.0) as client:

@@ -24,6 +24,7 @@ class ChatRequest(BaseModel):
     history: list[ChatMessage] = Field(default_factory=list)
     user_input: str = Field(min_length=1)
     suggestion_id: str | None = None
+    max_tokens: int = Field(default=500, ge=100, le=1500)
 
 # optional but extensible, in case i want to add more attr
 class ChatResponse(BaseModel):
