@@ -66,7 +66,6 @@ async def suggestions(
             pass
 
     if len(valid_items) < 3:
-        # Groq returned fewer than 3 valid items, skip this batch silently
         return {"batch": None}
 
     batch = SuggestionBatch(items=valid_items[:3])

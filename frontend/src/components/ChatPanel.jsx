@@ -57,7 +57,7 @@ export default function ChatPanel({ chatHistory, chatInput, setChatInput, isSend
   return (
     <>
       <div className="panel column-panel">
-        {/* Header */}
+        {/* header */}
         <div className="transcript-header">
           <h2 className="panel-title">Chat</h2>
           <button
@@ -70,7 +70,7 @@ export default function ChatPanel({ chatHistory, chatInput, setChatInput, isSend
           </button>
         </div>
 
-        {/* Messages scroll */}
+        {/* messages scroll */}
         <div className="transcript-scroll chat-scroll">
           {chatHistory.length === 0
             ? <div className="transcript-empty">Click any suggestion for a detailed answer, or type your own question about the conversation.</div>
@@ -88,7 +88,7 @@ export default function ChatPanel({ chatHistory, chatInput, setChatInput, isSend
           }
         </div>
 
-        {/* Composer */}
+        {/* composer */}
         {renderComposer()}
       </div>
 

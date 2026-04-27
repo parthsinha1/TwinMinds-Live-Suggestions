@@ -203,7 +203,6 @@ function App() {
       setTranscriptChunks(nextChunks)
       const nextContext = nextChunks.map((x) => x.text).join('\n').trim().slice(-suggestionContextChars)
 
-      // Only request suggestions when there's enough content for the model to work with
       const wordCount = text.trim().split(/\s+/).length
       if (autoSuggest && wordCount >= 8) {
         await requestSuggestions(nextContext)
@@ -245,7 +244,6 @@ function App() {
       const blobType = recorder.mimeType || parts[0]?.type || 'audio/webm'
       const blob = new Blob(parts, { type: blobType })
 
-      // Start the next segment immediately so no audio is lost while transcription runs
       if (shouldRecordRef.current && streamRef.current) {
         startRecordingSegment()
       }
