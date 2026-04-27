@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Download } from 'lucide-react'
-import { checkHealth, chatStream, suggestions, transcribe, validateKey } from './lib/api'
+import { checkHealth, chat, suggestions, transcribe, validateKey } from './lib/api'
 import SettingsPanel from './components/SettingsPanel'
 import TranscriptPanel from './components/TranscriptPanel'
 import SuggestionsPanel from './components/SuggestionsPanel'
@@ -11,10 +11,10 @@ const DEFAULT_SUGGESTION_PROMPT =
   'You are a live conversation copilot. Based on what the speaker just said, generate exactly 3 suggestions that reflect or extend what was spoken. Do NOT give external advice, tips, or facts. Instead: rephrase what the speaker said as a talking point they could share, ask a question directly about what they described, or seek clarification on something they mentioned. Everything must come directly from the transcript, not from outside knowledge.'
 
 const DEFAULT_CHAT_PROMPT =
-  'You are a helpful meeting copilot. Answer in 2-3 short paragraphs maximum. Be direct and concise. No unnecessary preamble or padding. Target 100-300 words'
+  'You are a meeting copilot. Answer in plain prose only — no code blocks, no pseudocode, no bullet lists. Use 2-3 short paragraphs. Hard limit: 150 words total. Stop writing when you reach the limit.'
 
 const DEFAULT_DETAIL_PROMPT =
-  'You are a helpful meeting copilot. The user clicked a suggestion from a live conversation. Give a focused, actionable response grounded in the transcript. Be direct, no filler, and no unnecessary length. Avoid repetitive template wording across turns and keep phrasing natural and practical. Give enough depth to be immediately usable in a live conversation. STRICT Target 180-300 words, no more than 300 words.'
+  'You are a meeting copilot. The user clicked a suggestion. Reply using ONLY plain prose with labeled sections — no code blocks, no pseudocode, no raw syntax examples. Format: one bold header, then "Bottom line", "Why now", "How to act", "Timing" — each 1-3 sentences. Hard limit: 250 words total. Stop when you reach the limit.'
 
 const DEFAULT_SETTINGS = {
   suggestionPrompt: DEFAULT_SUGGESTION_PROMPT,
@@ -318,7 +318,7 @@ function App() {
     }
   }
 
-  function sendChat(userText, suggestionId = null, options = {}) {
+  async function sendChat(userText, suggestionId = null, options = {}) {
     const { exactText = false, promptOverride = null, contextOverride = null, maxTokens = 500 } = options
     if (!apiKey) {
       setErrorText('Validate API key first')
@@ -338,44 +338,29 @@ function App() {
       content: text,
       suggestion_id: suggestionId,
     }
-    const assistantId = idNow('chat-assistant')
-    const assistantMessage = {
-      id: assistantId,
-      ts: isoNow(),
-      role: 'assistant',
-      content: '',
-      suggestion_id: suggestionId,
-    }
-    setChatHistory((prev) => [...prev, userMessage, assistantMessage])
+    setChatHistory((prev) => [...prev, userMessage])
     setIsSendingChat(true)
     setErrorText('')
 
-    const payload = {
-      transcript_context: contextOverride ?? transcriptContext,
-      chat_prompt: promptOverride ?? chatPrompt,
-      history: priorHistory,
-      user_input: text,
-      suggestion_id: suggestionId,
-      max_tokens: maxTokens,
-    }
-
-    chatStream(
-      apiKey,
-      payload,
-      (chunk) => {
-        setChatHistory((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantId ? { ...msg, content: msg.content + chunk } : msg
-          )
-        )
-      },
-      () => { setIsSendingChat(false) },
-      (err) => {
-        setErrorText(err)
-        setChatHistory((prev) => prev.filter((msg) => msg.id !== assistantId || msg.content))
-        setIsSendingChat(false)
+    try {
+      const payload = {
+        transcript_context: contextOverride ?? transcriptContext,
+        chat_prompt: promptOverride ?? chatPrompt,
+        history: priorHistory,
+        user_input: text,
+        suggestion_id: suggestionId,
+        max_tokens: maxTokens,
       }
-    )
+
+      const data = await chat(apiKey, payload)
+      if (data?.message) {
+        setChatHistory((prev) => [...prev, data.message])
+      }
+    } catch (error) {
+      setErrorText(error?.response?.data?.detail || error.message)
+    } finally {
+      setIsSendingChat(false)
+    }
   }
 
   function onChatSubmit(event) {
