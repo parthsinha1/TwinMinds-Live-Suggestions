@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi.responses import StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from services.groq import groq_test_key, groq_generate_suggestions, groq_chat_answer, groq_transcribe
 from schemas.common import HealthResponse, ValidateKeyResponse
@@ -73,12 +74,12 @@ async def suggestions(
 
     return {"batch": batch}
 
-@router.post("/chat", response_model=ChatResponse)
+@router.post("/chat")
 async def chat(
     payload: ChatRequest,
     api_key: str = Depends(extract_bearer_key)
 ):
-    answer = await groq_chat_answer(
+    stream = await groq_chat_answer(
         api_key=api_key,
         chat_prompt=payload.chat_prompt,
         transcript_context=payload.transcript_context,
@@ -86,13 +87,7 @@ async def chat(
         user_input=payload.user_input,
         max_tokens=payload.max_tokens,
     )
-
-    message = ChatMessage(
-        role="assistant",
-        content=answer,
-        suggestion_id=payload.suggestion_id,
-    )
-    return {"message":message}
+    return StreamingResponse(stream, media_type="text/event-stream")
 
 
 @router.post("/transcribe", response_model=TranscribeResponse)

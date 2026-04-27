@@ -156,15 +156,37 @@ async def groq_chat_answer(
         "messages": messages,
         "temperature": 0.3,
         "max_tokens": max_tokens,
+        "stream": True,
     }
 
-    async with httpx.AsyncClient(timeout=60.0) as client:
-        resp = await client.post(url, headers=headers, json=payload)
+    async def generate():
+        async with httpx.AsyncClient(timeout=90.0) as client:
+            async with client.stream("POST", url, headers=headers, json=payload) as resp:
+                if resp.status_code == 401:
+                    yield 'data: {"error":"Invalid Groq API key"}\n\n'
+                    return
+                if resp.status_code == 429:
+                    yield 'data: {"error":"Rate limited by Groq"}\n\n'
+                    return
+                if resp.status_code >= 400:
+                    yield f'data: {{"error":"Groq error {resp.status_code}"}}\n\n'
+                    return
+                async for line in resp.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data = line[6:]
+                    if data.strip() == "[DONE]":
+                        yield "data: [DONE]\n\n"
+                        return
+                    try:
+                        chunk = json.loads(data)
+                        content = chunk["choices"][0]["delta"].get("content", "")
+                        if content:
+                            yield f"data: {json.dumps({'content': content})}\n\n"
+                    except Exception:
+                        pass
 
-    _raise_for_groq_error(resp)
-
-    data = resp.json()
-    return data["choices"][0]["message"]["content"]
+    return generate()
 
 
 async def groq_transcribe(

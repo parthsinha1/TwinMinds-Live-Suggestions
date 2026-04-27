@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Download } from 'lucide-react'
-import { checkHealth, chat, suggestions, transcribe, validateKey } from './lib/api'
+import { checkHealth, chatStream, suggestions, transcribe, validateKey } from './lib/api'
 import SettingsPanel from './components/SettingsPanel'
 import TranscriptPanel from './components/TranscriptPanel'
 import SuggestionsPanel from './components/SuggestionsPanel'
@@ -318,7 +318,7 @@ function App() {
     }
   }
 
-  async function sendChat(userText, suggestionId = null, options = {}) {
+  function sendChat(userText, suggestionId = null, options = {}) {
     const { exactText = false, promptOverride = null, contextOverride = null, maxTokens = 500 } = options
     if (!apiKey) {
       setErrorText('Validate API key first')
@@ -338,29 +338,44 @@ function App() {
       content: text,
       suggestion_id: suggestionId,
     }
-    setChatHistory((prev) => [...prev, userMessage])
+    const assistantId = idNow('chat-assistant')
+    const assistantMessage = {
+      id: assistantId,
+      ts: isoNow(),
+      role: 'assistant',
+      content: '',
+      suggestion_id: suggestionId,
+    }
+    setChatHistory((prev) => [...prev, userMessage, assistantMessage])
     setIsSendingChat(true)
     setErrorText('')
 
-    try {
-      const payload = {
-        transcript_context: contextOverride ?? transcriptContext,
-        chat_prompt: promptOverride ?? chatPrompt,
-        history: priorHistory,
-        user_input: text,
-        suggestion_id: suggestionId,
-        max_tokens: maxTokens,
-      }
-
-      const data = await chat(apiKey, payload)
-      if (data?.message) {
-        setChatHistory((prev) => [...prev, data.message])
-      }
-    } catch (error) {
-      setErrorText(error?.response?.data?.detail || error.message)
-    } finally {
-      setIsSendingChat(false)
+    const payload = {
+      transcript_context: contextOverride ?? transcriptContext,
+      chat_prompt: promptOverride ?? chatPrompt,
+      history: priorHistory,
+      user_input: text,
+      suggestion_id: suggestionId,
+      max_tokens: maxTokens,
     }
+
+    chatStream(
+      apiKey,
+      payload,
+      (chunk) => {
+        setChatHistory((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantId ? { ...msg, content: msg.content + chunk } : msg
+          )
+        )
+      },
+      () => { setIsSendingChat(false) },
+      (err) => {
+        setErrorText(err)
+        setChatHistory((prev) => prev.filter((msg) => msg.id !== assistantId || msg.content))
+        setIsSendingChat(false)
+      }
+    )
   }
 
   function onChatSubmit(event) {
